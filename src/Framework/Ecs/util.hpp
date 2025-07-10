@@ -3,16 +3,11 @@
 #include <cassert>
 #include <cstdint>
 #include <iterator>
+#include <limits>
 #include <type_traits>
 
 #define assertm(msg, expr) assert(((void)msg, (expr)))
 
-namespace ecs::basic_type {
-
-using uint32 = std::uint32_t;
-using uint64 = std::uint64_t;
-
-}  // namespace ecs::basic_type
 
 namespace ecs::util {
 
@@ -101,5 +96,7 @@ using is_equal_iterator_t =
     template<typename Type_1_,typename Type_2_>
     using is_same_t =std::enable_if_t<std::is_same_v<Type_1_, Type_2_>>;
 
+    template <typename T,typename =std::enable_if_t<std::is_integral_v<T>>>
+    inline constexpr T max = std::numeric_limits<T>::max();
 
 }  // namespace ecs::util

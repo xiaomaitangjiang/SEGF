@@ -1,5 +1,6 @@
 #pragma once
 #include"../util.hpp"
+#include "Base/ecs_basic_type.hpp"
 #include<type_traits>
 
 namespace ecs::entity::basic_entity
@@ -29,6 +30,8 @@ struct entity_traits<uint32>
     using value_type=uint32;
 
     using entity_type=uint32;
+
+    
 };
 
 

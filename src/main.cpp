@@ -1,21 +1,10 @@
-#include <iostream>
-#include <iterator>
-#include <mutex>
-#include "Framework/Ecs/Registry/rejistry.hpp"
+#include "Base/ecs_basic_type.hpp"
+#include "Framework/Ecs/Registry/registry.hpp"
 
-struct test{
-    int a;
-};
+#undef main
 
 int main()
 {
-    test xiaoming{10};
-    ecs::registry::basic_registry::componentstorage<test,int> ste;
-    ste.add(1,xiaoming);
-    ste.add(2, xiaoming);
-
-    ecs::registry::basic_registry::componentstorage<test,int> ste2;
-    ste2.add_batch(ste.begin(),ste.end() );
-
+    ecs::registry::basic_registry::registry<ecs::basic_type::uint32> a;
     return 0;
 }

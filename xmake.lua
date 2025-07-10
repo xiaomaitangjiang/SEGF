@@ -1,13 +1,13 @@
 add_rules("mode.debug", "mode.release")
 set_languages("c99","c++17")
 set_warnings("all")
-add_requires("libsdl2","libsdl2_image")
+add_requires("libsdl2","libsdl2_ttf","libsdl2_image","libsdl2_mixer")
 
 target("GameFrame")
     set_kind("binary")
     add_files("src/*.cpp")
-    add_includedirs("src/Framework/Ecs","src/Framework/Base","src/Framework/graphics")
-    add_packages("libsdl2","libsdl2_image")
+    add_includedirs("src/Framework/Ecs","src/Framework/graphics")
+    add_packages("libsdl2","libsdl2_ttf","libsdl2_image","libsdl2_mixer")
 
 
 --

@@ -1,6 +1,7 @@
 #ifndef _SPARSESET_HPP_
 #define _SPARSESET_HPP_
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -29,6 +30,13 @@ public:
 
   explicit basic_sparseset_iterator(Entity *entity_ptr)
       : Entity_iter(entity_ptr) {}
+
+  template <typename Entity_Iter,
+            typename = std::void_t<
+                util::is_valid_iterator_t<Entity_Iter>,
+                util::is_same_t<typename Entity_Iter::value_type, Entity>>>
+  explicit basic_sparseset_iterator(Entity_Iter E_Iter)
+      : Entity_iter(&(*E_Iter)) {}
 
   Entity &operator*() const { return *Entity_iter; }
 
@@ -151,14 +159,14 @@ public:
   /// @brief find a element without check
   /// @param value  element to be found
   /// @return the type of T
-  T at_unsafe(const T value) {
+  T& at_unsafe(const T value) {
     return *((sparse.at(page(value)))->at(in_page(value)));
   }
 
   /// @brief find a element with check of range
   /// @param value  element to be found
   /// @return the type of T
-  T at(const T value) {
+  T& at(const T value) {
     if (page(value) >= sparse.size()) {
       throw std::out_of_range("basic_sparse out of range");
     }
@@ -168,7 +176,7 @@ public:
   /// @brief insert a element into container
   /// @param value
   void insert(const T value, const std::size_t index) {
-    if (std::size_t target_len = page(index) + 1; target_len > sparse.size()) {
+    if (std::size_t target_len = page(index) +1; target_len > sparse.size()) {
       for (std::size_t current_len = sparse.size(); target_len > current_len;
            current_len++) {
         sparse.emplace_back(std::unique_ptr<std::array<Type, PageSize>>(
@@ -230,7 +238,7 @@ public:
 public:
   void add(const Entity value) {
     density.push_back(value);
-    sparse.insert(density.size() - 1, value);
+    sparse.insert(density.size() -1, value);
     back_entity = static_cast<std::size_t>(value);
   }
 
@@ -282,9 +290,9 @@ public:
 
   Entity front() { return density.front(); }
 
-  Iterator<Entity> begin() { return density.begin();}
+  Iterator<Entity> begin() { return Iterator<Entity>(density.begin()); }
 
-  Iterator<Entity> end() { return density.end();}
+  Iterator<Entity> end() { return Iterator<Entity>(density.end()); }
 
 private:
   std::vector<Entity> density;
@@ -352,9 +360,9 @@ public:
     root_sparseset.get_index(entity);
   }
 
-  auto begin(){return root_sparseset->begin(); }
+  auto begin() { return root_sparseset->begin(); }
 
-  auto end(){return root_sparseset->end();}
+  auto end() { return root_sparseset->end(); }
 
 private:
   void try_emplace() {}
