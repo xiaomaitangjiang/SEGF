@@ -8,6 +8,6 @@ inline static constexpr std::size_t ECS_PAGE_SIZE = 4096;
 
 inline static constexpr std::size_t ECS_COMPONENT_PAGE_SIZE = 1024;
 
-inline static constexpr basic_type::uint16 MaxComponentTypes = 128;
+inline static constexpr basic_type::uint16 MaxComponentTypes = 1024;
 
 }  // namespace ecs::basic_value

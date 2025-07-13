@@ -232,19 +232,20 @@ public:
 
   void resize(std::size_t count) { components.resize(count); }
 
-  void destory(Entity entity, void* storage) 
-  {
-    destory_fn(entity,storage);
+  void destory(Entity entity, void* storage, std::size_t type_idx) {
+    destory_list[type_idx](entity, storage);
   }
 
   template <typename componentstorage, typename component>
-  void set_destory(void (*fn)(Entity, void*))
-  {
-    destory_fn=fn;
+  void set_destory(void (*fn)(Entity, void*), std::size_t type_idx) {
+    if (destory_list.size() >= type_idx) {
+      destory_list.resize(type_idx + 1, nullptr);
+    }
+    destory_list[type_idx] = fn;
   }
 
 private:
-  void (*destory_fn)(Entity, void*) = nullptr;   //cache unfriendly
+  std::vector<void (*)(Entity, void*)> destory_list;
   std::vector<Storage_ptr> components;
 };
 
@@ -288,7 +289,7 @@ public:
     componentMask& Mask_temp = component_masks[entity];
     for (std::size_t i = 0; i <= MaxComponentTypes; i += 1) {
       if (Mask_temp.test(i)) {
-        components.destory(entity, components[i].get());
+        components.destory(entity, components[i].get(), i);
       }
       Mask_temp.reset();
       entities[entity] = false;
@@ -309,7 +310,8 @@ public:
           auto* store =
               static_cast<componentstorage<component, Entity>>(storage_ptr);
           store->remove(entity);
-        });
+        },
+        type_idx);
 
     return storage->add(entity, component{std::forward<Args>(args)...});
   }
@@ -333,13 +335,14 @@ public:
     std::size_t type_index = type_manager.get_index<component>();
     auto& storage = components[type_index];
     if (storage) {
-      components.destory(entity, storage.get());
+      components.destory(entity, storage.get(),type_index);
     }
 
     component_masks[entity].reset(type_index);
   }
 
 private:
+
   inline bool is_valid(Entity num) {
     return (num <= back_entity) && (entities[num]);
   }
