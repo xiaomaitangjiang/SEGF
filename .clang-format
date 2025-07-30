@@ -52,20 +52,20 @@ BinPackParameters: true
 BitFieldColonSpacing: Both
 BraceWrapping:
   AfterCaseLabel: false
-  AfterClass: false
+  AfterClass: true      # 类定义后换行
+  AfterFunction: true   # 函数定义后换行 ← 这是控制函数花括号的关键
+  AfterStruct: true     # struct 后换行
+  AfterUnion: true      # union 后换行
+  AfterExternBlock: true
+  BeforeElse: true      # else 前换行
+  IndentBraces: false   # 大括号不额外缩进
   AfterControlStatement: Never
   AfterEnum: false
-  AfterFunction: false
   AfterNamespace: false
   AfterObjCDeclaration: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterExternBlock: false
   BeforeCatch: false
-  BeforeElse: false
   BeforeLambdaBody: false
   BeforeWhile: false
-  IndentBraces: false
   SplitEmptyFunction: true
   SplitEmptyRecord: true
   SplitEmptyNamespace: true
@@ -73,7 +73,7 @@ BreakAfterAttributes: Never
 BreakAfterJavaFieldAnnotations: false
 BreakArrays: true
 BreakBeforeBinaryOperators: None
-BreakBeforeBraces: Attach
+BreakBeforeBraces: Custom    # 自定义大括号换行
 BreakBeforeConceptDeclarations: Always
 BreakBeforeInlineASMColon: OnlyMultiline
 BreakBeforeTernaryOperators: true
