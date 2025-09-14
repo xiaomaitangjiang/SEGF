@@ -10,7 +10,9 @@
 #include "../Base/ecs_basic_type.hpp"
 #include "../Base/fwd.hpp"
 #include "../Component/component.hpp"
+#include "../Ensemble/Ensemble.hpp"
 #include "../Entity/Entity.hpp"
+#include "../View/View.hpp"
 
 /*
 Notice:
@@ -21,10 +23,10 @@ namespace ecs::registry::basic_registry {
 using basic_type::default_type;
 using basic_type::uint32;
 using Entity = entity::entity<default_type>;
-using std::vector;
-using ecs::component::componentTypeManager;
-using ecs::component::ComponentStorageWapper;
 using ecs::component::componentstorage;
+using ecs::component::ComponentStorageWapper;
+using ecs::component::componentTypeManager;
+using std::vector;
 
 using basic_type::uint8;
 using basic_value::MaxComponentTypes;
@@ -44,11 +46,19 @@ class registry
   vector<uint8> entities;  // a replacement of vector<bool>
 
 public:
-  // basic_View View
-
 public:
   registry() = default;
 
+public:
+  template <typename T>
+  using View = view::basic_view<vector, T>;
+
+  // todo
+  /*
+    template<typename... Args>
+    using View=view::basic_view<,>
+  */
+public:
   Entity create()
   {
     if (back_entity >= entities.size()) {
@@ -69,25 +79,24 @@ public:
     componentMask& Mask_temp = component_masks[entity];
     for (std::size_t i = 0; i <= MaxComponentTypes; i += 1) {
       if (Mask_temp.test(i)) {
-        components.destory(entity, components[i].get(), i);
+        components.remove(entity, i);
       }
       Mask_temp.reset();
       entities[entity] = false;
     }
   }
-  
-  template<typename component>
-  void destory(Entity entity)
+
+  template <typename component>
+  void remove(Entity entity)
   {
     if (!is_valid(entity)) {
       return;
     }
     componentMask& Mask_temp = component_masks[entity];
     std::size_t type_idx = type_manager.get_index<component>();
-    Mask_temp.set(type_idx,false);
-    components.destory(entity,components[type_idx].get(), std::size_t type_idx)
+    Mask_temp.set(type_idx, false);
+    components.remove(entity, type_idx);
   }
-  
 
   template <typename component, typename... Args>
   component& add(Entity entity, Args&&... args)
@@ -98,14 +107,6 @@ public:
     }
     std::size_t type_idx = type_manager.get_index<component>();
     component_masks[entity].set(type_idx);
-
-    storage->set_destory(
-        [](Entity entity, void* storage_ptr) {
-          auto* store =
-              static_cast<componentstorage<component, Entity>>(storage_ptr);
-          store->remove(entity);
-        },
-        type_idx);
 
     return storage->add(entity, component{std::forward<Args>(args)...});
   }
@@ -122,27 +123,29 @@ public:
     return storage->at(entity);
   }
 
-  template <typename component>
-  void remove(Entity entity)
+  template <typename Component>
+  View<Component> view()
   {
-    if (!is_valid(entity)) {
-      return;
-    }
-    std::size_t type_index = type_manager.get_index<component>();
-    auto& storage = components[type_index];
-    if (storage) {
-      components.destory(entity, storage.get(), type_index);
-    }
-
-    component_masks[entity].reset(type_index);
+    return View<Component>(
+        *(components[type_manager.get_index<Component>()].get()));
   }
 
-  void begin() {}
+  template <typename... Components>
+  View<ensemble::Ensemble<View, Components...>> view()
+  {
+    return View<ensemble::Ensemble<View, Components...>>(
+        *((components[type_manager.get_index<Components>()].get()), ...));
+  }
 
 private:
   inline bool is_valid(Entity num)
   {
     return (num <= back_entity) && (entities[num]);
+  }
+
+  void remove(Entity entity, std::size_t type_idx)
+  {
+    (components[type_idx].get())->remove(entity);
   }
 
   template <typename component>

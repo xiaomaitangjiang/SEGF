@@ -1,27 +1,39 @@
 #pragma once
 
+#include <float.h>
 #include <type_traits>
 
 #include "../Base/iterator.hpp"
-#include "../Registry/registry.hpp"
-#include "Component/component.hpp"
 #include "util.hpp"
-
-// notice:
-// 你可能留意到这部分注释并未使用英文，之所以改为中文是因为我要降低我的理解难度
-
-/* notice: You may notice that this part of the note wasn't written in English.
-           The reason why I am turning to Chinese rather than English is that
-           I need to reduce the difficulty of reading when I review my code.
-*/
 
 namespace ecs::view {
 
-using ecs::registry::basic_registry::registry;
-
 template <typename T>
-class basic_view_iterator : public ecs::iterator::basic_iterator<T>
+class basic_view_iterator : public iterator::basic_iterator<T>
 {
+public:
+  using basic_iterator = iterator::basic_iterator<T>;
+
+  using iterator_category = typename basic_iterator::iterator_category;
+  using value_type = typename basic_iterator::value_type;
+  using difference_type = typename basic_iterator::difference_type;
+  using pointer = typename basic_iterator::pointer;
+  using reference = typename basic_iterator::reference;
+
+  using Storage=typename basic_iterator::Storage;
+
+public:
+  explicit basic_view_iterator() = default;
+
+  explicit basic_view_iterator(Storage ptr) : basic_iterator(ptr) {}
+
+  template <typename OtherIter,
+            std::enable_if_t<!std::is_same_v<OtherIter, basic_iterator> &&
+                                 ecs::util::is_iterator_v<OtherIter>,
+                             int> = 0>
+  basic_view_iterator(const OtherIter& other) : basic_iterator(other)
+  {
+  }
 };
 
 /**
@@ -37,6 +49,9 @@ class basic_view_iterator : public ecs::iterator::basic_iterator<T>
  * @note 使用 static_assert 确保容器满足迭代器要求：
  *       - 必须提供有效的 `iterator` 类型成员
  *       - 迭代器必须符合 STL 迭代器基本规范
+ *
+ * @note 此类只能提供对单个容器的非持有引用
+ *
  */
 template <template <typename... Args> typename container, typename... elements>
 class basic_view
@@ -45,7 +60,9 @@ class basic_view
 
   using ValueType = typename Container_T::value_type;
 
-  using Iterator = typename basic_view_iterator<ValueType>;
+  using Iterator = basic_view_iterator<ValueType>;
+
+  using Iterator_Wapper=basic_view_iterator<typename Container_T::iterator>;
 
   static_assert(util::is_valid_iterator_v<typename Container_T::iterator>,
                 "invalid container");
@@ -98,9 +115,8 @@ public:
    *
    * 与标准 STL 容器一致，返回指向容器头部的迭代器。
    */
-  typename Container_T::iterator begin() const noexcept
-  {
-    return reg_reference.begin();
+  Iterator_Wapper begin() const noexcept {
+    return Iterator_Wapper(reg_reference.begin());
   }
 
   /**
@@ -108,31 +124,12 @@ public:
    *
    * 与标准 STL 容器一致，返回指向容器末尾的迭代器，常用于表示查找失败。
    */
-  typename Container_T::iterator end() const noexcept
-  {
-    return reg_reference.end();
+  Iterator_Wapper end() const noexcept {
+    return Iterator_Wapper(reg_reference.end());
   }
 
 private:
   Container_T& reg_reference;
-};
-
-using component::ComponentStorageWapper;
-
-template <template <typename T> typename container, typename Entity,
-          typename... elements>
-class ComponentStorage_view
-{
-public:
-  explicit ComponentStorage_view() {}
-
-  template <typename Fuc>
-  void for_each(Fuc&& func)
-  {
-  }
-
-private:
-  std::vector<ComponentStorageWapper<Entity>> list;
 };
 
 }  // namespace ecs::view

@@ -1,10 +1,12 @@
 #pragma once
 
+#include <memory>
 #include <vector>
 
 #include "../Base/Sparseset.hpp"
 #include "../Base/iterator.hpp"
 #include "../util.hpp"
+#include "Base/Typeerase.hpp"
 
 namespace ecs::component {
 
@@ -135,18 +137,30 @@ private:
   Iterator<Component> component_iter_;
 };
 
+template <typename Entity>
+class basic_componentstorage
+{
+public:
+  using SparseSet_Iterator = basic_type::basic_sparseset_iterator<Entity>;
+
+public:
+  virtual ~basic_componentstorage() = 0;
+  virtual void remove(Entity entity) = 0;
+  [[nodiscard]] virtual std::size_t size() const = 0;
+  [[nodiscard]] virtual bool valid(Entity entity) const = 0;
+};
+
 template <typename Component_Type, typename Entity>
-class componentstorage
+class componentstorage : public basic_componentstorage<Entity>
 {
   basic_type::SparseSet<Entity> entity_pool;
   vector<Component_Type> components_pool;
-  
-  using Iterator = componentstorage_iterator<Component_Type, Entity>;
 
 public:
+  using SparseSet_Iterator = basic_type::basic_sparseset_iterator<Entity>;
+  using Iterator = componentstorage_iterator<Component_Type, Entity>;
   using value_type = Component_Type;
-
-  using iterator = Iterator;
+  using size_type = std::size_t;
 
 public:
   Component_Type& operator[](Entity entity)
@@ -165,7 +179,7 @@ public:
   {
     entity_pool.erase(entity);
 
-    if (static_cast<std::size_t>(entity) != (components_pool.size() + 1)) {
+    if (static_cast<size_type>(entity) != (components_pool.size() + 1)) {
       std::swap(components_pool.at(entity_pool.get_index(entity)),
                 components_pool.back());
     }
@@ -178,7 +192,17 @@ public:
     return components_pool.at(entity_pool.get_index(entity));
   }
 
-  [[nodiscard]] std::size_t size() const { return components_pool.size(); }
+  [[nodiscard]] size_type size() const override
+  {
+    return components_pool.size();
+  }
+
+  [[nodiscard]] bool valid(Entity entity) const override
+  {
+    bool invalidity =
+        (entity_pool.size() <= entity) && (entity_pool.try_find().has_value());
+    return !invalidity;
+  }
 
   Iterator begin() { return {components_pool.begin(), entity_pool.begin()}; }
 
@@ -227,7 +251,11 @@ public:
 template <typename Entity>
 class ComponentStorageWapper
 {
-  using Storage_ptr = std::shared_ptr<void>;
+  using Storage = basic_componentstorage<Entity>;
+  using Storage_ptr = std::unique_ptr<Storage>;
+
+public:
+  using SparseSet_Iterator = basic_type::basic_sparseset_iterator<Entity>;
 
 public:
   ComponentStorageWapper() = default;
@@ -241,24 +269,7 @@ public:
 
   [[nodiscard]] std::size_t size() const { return components.size(); }
 
-  void resize(std::size_t count) { components.resize(count); }
-
-  void destory(Entity entity, void* storage, std::size_t type_idx)
-  {
-    destory_list[type_idx](entity, storage);
-  }
-
-  template <typename componentstorage, typename component>
-  void set_destory(void (*fn)(Entity, void*), std::size_t type_idx)
-  {
-    if (destory_list.size() >= type_idx) {
-      destory_list.resize(type_idx + 1, nullptr);
-    }
-    destory_list[type_idx] = fn;
-  }
-
 private:
-  std::vector<void (*)(Entity, void*)> destory_list;
   std::vector<Storage_ptr> components;
 };
 
