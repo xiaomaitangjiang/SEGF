@@ -28,7 +28,9 @@ public:
 
   ~Ensemble()=default;
 
-
+  template<typename T>
+  T find()
+  {}
 
 private:
   Storage ensemble_;
